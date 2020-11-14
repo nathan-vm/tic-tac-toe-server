@@ -1,13 +1,16 @@
 import 'dotenv/config'
 import http from 'http'
 import socket from 'socket.io'
+import uuid from 'uuid'
+
+import { gameRules } from './gameRules'
 
 const PORT = process.env.PORT
 const HOST = process.env.HOST
 
 let players = []
 let sockets = []
-// const games = []
+const games = []
 
 const server = http.createServer()
 const io = socket(server)
@@ -30,7 +33,7 @@ io.on('connection', client => {
       const newSocket = {
         id: client.id,
         isPlaying: false,
-        game_id: null,
+        gameId: null,
         playerData: null,
       }
 
@@ -79,14 +82,112 @@ io.on('connection', client => {
 
     client.emit('getOpponentsResponse', response)
 
+    const clientSocket = sockets.find(({ id }) => id === client.id)
+
     client.broadcast.emit('newOpponentAdded', {
-      id: client.id,
-      name: sockets[client.id].mobile_number,
-      played: players[sockets[client.id].mobile_number].played,
-      won: players[sockets[client.id].mobile_number].won,
-      draw: players[sockets[client.id].mobile_number].draw,
+      id: clientSocket.id,
+      name: clientSocket.playerData.name,
+      played: clientSocket.playerData.played,
+      won: clientSocket.playerData.won,
+      draw: clientSocket.playerData.draw,
     })
   })
+
+  client.on('selectOpponent', data => {
+    const player2Socket = sockets.find(
+      ({ id, isPlaying }) => data.id === id && !isPlaying,
+    )
+
+    if (player2Socket) {
+      const player1Socket = sockets.find(({ id }) => client.id === id)
+
+      const gameId = uuid()
+
+      player1Socket.is_playing = true
+      player2Socket.is_playing = true
+
+      player1Socket.gameId = gameId
+      player2Socket.gameId = gameId
+
+      player1Socket.played += 1
+      player2Socket.played += 1
+
+      const gameData = {
+        player1: player1Socket,
+        player2: player2Socket,
+        whoseTurn: player1Socket.id,
+        sign: {
+          [player1Socket.id]: 'x',
+          [player2Socket.id]: 'o',
+        },
+        playboard: [
+          ['', '', ''],
+          ['', '', ''],
+          ['', '', ''],
+        ],
+        gameStatus: 'ongoing', // "ongoing","won","draw"
+        gameWinner: null, // winner_id if status won
+        winningCombination: [],
+      }
+
+      games.push(gameData)
+
+      io.sockets.connected.player1Socket.join(gameId)
+      io.sockets.connected.player2Socket.join(gameId)
+
+      io.emit('excludePlayers', [player1Socket.id, player2Socket.id])
+      io.to(gameId).emit('gameStarted', {
+        status: true,
+        gameId,
+        gameData,
+      })
+    }
+
+    const response = {
+      status: false,
+      message: 'Opponent is playing with someone else.',
+    }
+
+    client.emit('alreadyPlaying', response)
+  })
+
+  client.on('selectCell', data => {
+    const status = gameRules(data, sockets, players, games)
+
+    if (status === 'draw' || status === 'won') {
+      io.to(data.gameId).emit('selectCellResponse', status)
+    }
+  })
+
+  // client.on('disconnect', () => {
+  //   console.log('disconnect : ' + client.id)
+
+  //   const existingSocket = sockets.find(({ id }) => id === client.id)
+
+  //   if (existingSocket) {
+  //     if (existingSocket.is_playing) {
+  //       io.to(existingSocket.gameId).emit('opponentLeft', {})
+
+  //       const playerIndex = players.findIndex(
+  //         ({ name }) => client.name === name,
+  //       )
+
+  //       players.splice(playerIndex, 1)
+
+  //       io.sockets.connected[
+  //         client.id == games[sockets[client.id].gameId].player1
+  //           ? games[sockets[client.id].gameId].player2
+  //           : games[sockets[client.id].gameId].player1
+  //       ].leave(sockets[client.id].gameId)
+
+  //       delete games[sockets[client.id].gameId]
+  //     }
+  //   }
+  //   delete sockets[client.id]
+  //   client.broadcast.emit('opponentDisconnected', {
+  //     id: client.id,
+  //   })
+  // })
 })
 
 server.listen(PORT, HOST)

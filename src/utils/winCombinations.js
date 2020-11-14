@@ -1,3 +1,5 @@
+// [linha,coluna]
+
 export const winCombinations = [
   [
     [0, 0],
