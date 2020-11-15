@@ -1,9 +1,10 @@
-import 'dotenv/config'
+import dotenv from 'dotenv'
 import http from 'http'
-import socket from 'socket.io'
-import uuid from 'uuid'
+import { v4 as uuid } from 'uuid'
 
-import { gameRules } from './gameRules'
+import { gameRules } from './gameRules.js'
+import { Server } from 'socket.io'
+dotenv.config()
 
 const PORT = process.env.PORT
 const HOST = process.env.HOST
@@ -13,7 +14,7 @@ let sockets = []
 const games = []
 
 const server = http.createServer()
-const io = socket(server)
+const io = new Server(server)
 
 io.on('connection', client => {
   console.log('connected : ' + client.id)
