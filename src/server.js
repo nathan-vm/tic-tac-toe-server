@@ -14,7 +14,7 @@ let sockets = []
 const games = []
 
 const server = http.createServer()
-const io = new Server(server)
+const io = new Server(server, { cors: ['http:localhost:3000'] })
 
 io.on('connection', client => {
   console.log('connected : ' + client.id)
