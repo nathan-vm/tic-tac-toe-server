@@ -85,13 +85,15 @@ io.on('connection', client => {
 
     const clientSocket = sockets.find(({ id }) => id === client.id)
 
-    client.broadcast.emit('newOpponentAdded', {
-      id: clientSocket.id,
-      name: clientSocket.playerData.name,
-      played: clientSocket.playerData.played,
-      won: clientSocket.playerData.won,
-      draw: clientSocket.playerData.draw,
-    })
+    if (clientSocket) {
+      client.broadcast.emit('newOpponentAdded', {
+        id: clientSocket.id,
+        name: clientSocket.playerData.name,
+        played: clientSocket.playerData.played,
+        won: clientSocket.playerData.won,
+        draw: clientSocket.playerData.draw,
+      })
+    }
   })
 
   client.on('selectOpponent', data => {
@@ -160,35 +162,39 @@ io.on('connection', client => {
     }
   })
 
-  // client.on('disconnect', () => {
-  //   console.log('disconnect : ' + client.id)
+  client.on('disconnect', () => {
+    console.log('disconnect : ' + client.id)
 
-  //   const existingSocket = sockets.find(({ id }) => id === client.id)
+    const existingSocket = sockets.find(({ id }) => id === client.id)
+    const indexSocket = sockets.findIndex(({ id }) => id === client.id)
 
-  //   if (existingSocket) {
-  //     if (existingSocket.is_playing) {
-  //       io.to(existingSocket.gameId).emit('opponentLeft', {})
+    if (existingSocket) {
+      if (existingSocket.is_playing) {
+        io.to(existingSocket.gameId).emit('opponentLeft', {})
 
-  //       const playerIndex = players.findIndex(
-  //         ({ name }) => client.name === name,
-  //       )
+        const playerIndex = players.findIndex(
+          ({ name }) => client.name === name,
+        )
 
-  //       players.splice(playerIndex, 1)
+        players.splice(playerIndex, 1)
+        console.log(players)
 
-  //       io.sockets.connected[
-  //         client.id == games[sockets[client.id].gameId].player1
-  //           ? games[sockets[client.id].gameId].player2
-  //           : games[sockets[client.id].gameId].player1
-  //       ].leave(sockets[client.id].gameId)
+        io.sockets.connected[
+          client.id == games[sockets[client.id].gameId].player1
+            ? games[sockets[client.id].gameId].player2
+            : games[sockets[client.id].gameId].player1
+        ].leave(sockets[client.id].gameId)
 
-  //       delete games[sockets[client.id].gameId]
-  //     }
-  //   }
-  //   delete sockets[client.id]
-  //   client.broadcast.emit('opponentDisconnected', {
-  //     id: client.id,
-  //   })
-  // })
+        delete games[sockets[client.id].gameId]
+      }
+    }
+    if (indexSocket >= 0) {
+      sockets.splice(indexSocket, 1)
+    }
+    client.broadcast.emit('opponentDisconnected', {
+      id: client.id,
+    })
+  })
 })
 
 server.listen(PORT, HOST)
