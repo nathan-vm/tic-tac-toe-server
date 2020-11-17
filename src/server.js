@@ -51,6 +51,7 @@ io.on('connection', client => {
 
       if (!alreadyPlayed) {
         const newPlayer = {
+          id: client.id,
           name: data.name,
           played: 0,
           won: 0,
@@ -116,6 +117,7 @@ io.on('connection', client => {
       player2Socket.played += 1
 
       const gameData = {
+        gameId,
         player1: player1Socket,
         player2: player2Socket,
         whoseTurn: player1Socket.id,
@@ -138,7 +140,26 @@ io.on('connection', client => {
       io.sockets.sockets.get(player1Socket.id).join(gameId)
       io.sockets.sockets.get(player2Socket.id).join(gameId)
 
-      io.emit('excludePlayers', [player1Socket.id, player2Socket.id])
+      const response = []
+
+      sockets.forEach(socket => {
+        if (
+          socket.id !== player1Socket.id &&
+          socket.id !== player2Socket.id &&
+          socket.id !== client.id &&
+          !socket.isPlaying
+        ) {
+          response.push({
+            id: socket.id,
+            name: socket.playerData.name,
+            played: socket.playerData.played,
+            won: socket.playerData.won,
+            draw: socket.playerData.draw,
+          })
+        }
+      })
+
+      io.emit('excludePlayers', response)
       io.to(gameId).emit('gameStarted', {
         status: true,
         gameId,
@@ -166,26 +187,32 @@ io.on('connection', client => {
     console.log('disconnect : ' + client.id)
 
     const existingSocket = sockets.find(({ id }) => id === client.id)
-    const indexSocket = sockets.findIndex(({ id }) => id === client.id)
+    const indexSocket = sockets.indexOf(existingSocket)
 
     if (existingSocket) {
       if (existingSocket.is_playing) {
         io.to(existingSocket.gameId).emit('opponentLeft', {})
 
-        const playerIndex = players.findIndex(
-          ({ name }) => client.name === name,
-        )
-        if (playerIndex.length >= 0) {
+        const player = players.find(({ id }) => client.id === id)
+        const playerIndex = players.indexOf(player)
+
+        let game = {}
+        let gameIndex = -1
+        let playerSocket = ''
+
+        if (playerIndex >= 0) {
+          game = games.find(({ gameId }) => gameId === existingSocket.gameId)
+          gameIndex = games.indexOf(game)
+
+          playerSocket =
+            game.player1.id === client.id ? game.player2.id : game.player1.id
+
           players.splice(playerIndex, 1)
         }
 
-        io.sockets.connected[
-          client.id == games[sockets[client.id].gameId].player1
-            ? games[sockets[client.id].gameId].player2
-            : games[sockets[client.id].gameId].player1
-        ].leave(sockets[client.id].gameId)
+        io.sockets.sockets.get(playerSocket).leave(existingSocket.gameId)
 
-        delete games[sockets[client.id].gameId]
+        games.splice(gameIndex, 1)
       }
     }
     if (indexSocket >= 0) {

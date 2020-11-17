@@ -9,17 +9,19 @@
 import { winCombinations } from './utils/winCombinations.js'
 
 export function gameRules(data, sockets, players, games) {
-  const game = games.find(game => game.id === data.gameId)
+  const game = games.find(({ gameId }) => gameId === data.gameId)
   const player1 = players.find(({ id }) => game.player1.id === id)
   const player2 = players.find(({ id }) => game.player2.id === id)
+
+  console.log(players)
 
   game.playboard[data.i][data.j] = game.sign[data.player.id]
 
   let isDraw = true
 
-  game.playboard.forEach(row => {
-    row.forEach(column => {
-      if (game.playboard[row][column] === '') {
+  game.playboard.forEach((row, rowIdx) => {
+    row.forEach((_, columnIdx) => {
+      if (game.playboard[rowIdx][columnIdx] === '') {
         isDraw = false
       }
     })
