@@ -203,14 +203,19 @@ io.on('connection', client => {
         if (playerIndex >= 0) {
           game = games.find(({ gameId }) => gameId === existingSocket.gameId)
           gameIndex = games.indexOf(game)
+          if (game) {
+            playerSocket =
+              game.player1.id === client.id ? game.player2.id : game.player1.id
+            const playerLeave =
+              game.player1.id === client.id ? game.player1 : game.player2
 
-          playerSocket =
-            game.player1.id === client.id ? game.player2.id : game.player1.id
-
+            playerLeave.isPlaying = false
+          }
           players.splice(playerIndex, 1)
         }
-
-        io.sockets.sockets.get(playerSocket).leave(existingSocket.gameId)
+        if (playerSocket) {
+          io.sockets.sockets.get(playerSocket).leave(existingSocket.gameId)
+        }
 
         games.splice(gameIndex, 1)
       }
