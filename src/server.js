@@ -176,10 +176,75 @@ io.on('connection', client => {
   })
 
   client.on('selectCell', data => {
-    const status = gameRules(data, sockets, players, games)
+    const game = gameRules(data, players, games)
 
-    if (status === 'draw' || status === 'won') {
-      io.to(data.gameId).emit('selectCellResponse', status)
+    if (game.game_status !== 'draw' || game.game_status !== 'won') {
+      io.to(data.gameId).emit('selectCellResponse', game)
+    }
+
+    if (game.game_status === 'draw' || game.game_status === 'won') {
+      io.to(data.gameId).emit('selectCellResponse', game)
+
+      let gameBetweenSeconds = 10
+      const gameBetweenInterval = setInterval(() => {
+        gameBetweenSeconds--
+        io.to(data.gameId).emit('gameInterval', gameBetweenSeconds)
+
+        const gameIndex = games.indexOf(game)
+
+        if (gameIndex >= 0) {
+          games.splice(gameIndex, 1)
+        }
+
+        if (gameBetweenSeconds === 0) {
+          clearInterval(gameBetweenInterval)
+
+          const gameId = uuid()
+
+          game.player1.is_playing = true
+          game.player2.is_playing = true
+
+          game.player1.gameId = gameId
+          game.player2.gameId = gameId
+
+          game.player1.played += 1
+          game.player2.played += 1
+
+          const gameData = {
+            gameId,
+            player1: game.player1,
+            player2: game.player2,
+            whoseTurn: game.player1.id,
+            sign: {
+              [game.player1.id]: 'x',
+              [game.player2.id]: 'o',
+            },
+            playboard: [
+              ['', '', ''],
+              ['', '', ''],
+              ['', '', ''],
+            ],
+            gameStatus: 'ongoing', // "ongoing","won","draw"
+            gameWinner: null, // winner_id if status won
+            winningCombination: [],
+          }
+
+          games.push(gameData)
+
+          io.sockets.sockets.get(game.player1.id).join(gameId)
+          io.sockets.sockets.get(game.player2.id).join(gameId)
+
+          io.to(gameId).emit('nextGameData', {
+            status: true,
+            game_id: gameId,
+            game_data: games[gameId],
+          })
+
+          io.sockets.connected[game.player1].leave(data.gameId)
+          io.sockets.connected[game.player2].leave(data.gameId)
+          // delete game
+        }
+      }, 1000)
     }
   })
 
