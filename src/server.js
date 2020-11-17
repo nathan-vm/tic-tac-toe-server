@@ -135,8 +135,8 @@ io.on('connection', client => {
 
       games.push(gameData)
 
-      io.sockets.connected.player1Socket.join(gameId)
-      io.sockets.connected.player2Socket.join(gameId)
+      io.sockets.sockets.get(player1Socket.id).join(gameId)
+      io.sockets.sockets.get(player2Socket.id).join(gameId)
 
       io.emit('excludePlayers', [player1Socket.id, player2Socket.id])
       io.to(gameId).emit('gameStarted', {
@@ -175,9 +175,9 @@ io.on('connection', client => {
         const playerIndex = players.findIndex(
           ({ name }) => client.name === name,
         )
-
-        players.splice(playerIndex, 1)
-        console.log(players)
+        if (playerIndex.length >= 0) {
+          players.splice(playerIndex, 1)
+        }
 
         io.sockets.connected[
           client.id == games[sockets[client.id].gameId].player1
