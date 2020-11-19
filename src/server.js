@@ -122,8 +122,8 @@ io.on('connection', client => {
         player2: player2Socket,
         whoseTurn: player1Socket.id,
         sign: {
-          [player1Socket.id]: 'x',
-          [player2Socket.id]: 'o',
+          [player1Socket.id]: 'X',
+          [player2Socket.id]: 'O',
         },
         playboard: [
           ['', '', ''],
@@ -178,11 +178,11 @@ io.on('connection', client => {
   client.on('selectCell', data => {
     const game = gameRules(data, players, games)
 
-    if (game.game_status !== 'draw' || game.game_status !== 'won') {
+    if (game.gameStatus !== 'draw' || game.gameStatus !== 'won') {
       io.to(data.gameId).emit('selectCellResponse', game)
     }
 
-    if (game.game_status === 'draw' || game.game_status === 'won') {
+    if (game.gameStatus === 'draw' || game.gameStatus === 'won') {
       io.to(data.gameId).emit('selectCellResponse', game)
 
       let gameBetweenSeconds = 10
@@ -216,8 +216,8 @@ io.on('connection', client => {
             player2: game.player2,
             whoseTurn: game.player1.id,
             sign: {
-              [game.player1.id]: 'x',
-              [game.player2.id]: 'o',
+              [game.player1.id]: 'X',
+              [game.player2.id]: 'O',
             },
             playboard: [
               ['', '', ''],
@@ -239,9 +239,8 @@ io.on('connection', client => {
             game_id: gameId,
             game_data: games[gameId],
           })
-
-          io.sockets.connected[game.player1].leave(data.gameId)
-          io.sockets.connected[game.player2].leave(data.gameId)
+          io.sockets.sockets.get(game.player1.id).leave(data.gameId)
+          io.sockets.sockets.get(game.player2.id).leave(data.gameId)
           // delete game
         }
       }, 1000)

@@ -26,10 +26,7 @@ export function gameRules(data, players, games) {
   })
 
   if (isDraw) {
-    game.game_status = 'draw'
-
-    players[game[game.player1].mobile_number].draw++
-    players[game[game.player2].mobile_number].draw++
+    game.gameStatus = 'draw'
   }
 
   for (let i = 0; i < winCombinations.length; i++) {
@@ -38,9 +35,9 @@ export function gameRules(data, players, games) {
       game.playboard[winCombinations[i][1][0]][winCombinations[i][1][1]] +
       game.playboard[winCombinations[i][2][0]][winCombinations[i][2][1]]
 
-    if (tempComb === 'xxx' || tempComb === 'ooo') {
-      game.game_winner = game.whoseTurn
-      game.game_status = 'won'
+    if (tempComb === 'XXX' || tempComb === 'OOO') {
+      game.gameWinner = game.whoseTurn
+      game.gameStatus = 'won'
       game.winning_combination = [
         [winCombinations[i][0][0], winCombinations[i][0][1]],
         [winCombinations[i][1][0], winCombinations[i][1][1]],
