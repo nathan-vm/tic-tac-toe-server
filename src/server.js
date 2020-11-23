@@ -10,17 +10,17 @@ const HOST = process.env.HOST
 
 const players = {
   /**
-   * nathan: {
+   * Nathan: {
    *  win: 10,
    *  draw: 5,
    *  played: 20,
    * },
-   * mauricius: {
+   * Mauricius: {
    *  win: 10,
    *  draw: 5,
    *  played: 20,
    * },
-   * cadu: {
+   * Cadu: {
    *  win: 10,
    *  draw: 5,
    *  played: 20,
@@ -120,12 +120,10 @@ io.on('connection', client => {
   })
 
   client.on('getOpponents', () => {
-    console.log(sockets[client.id])
-
     const response = []
 
     for (const id in sockets) {
-      if (id !== client.id && !id.isPlaying) {
+      if (id !== client.id && !sockets[id].isPlaying) {
         response.push({
           id: id,
           name: sockets[id].name,
@@ -168,12 +166,12 @@ io.on('connection', client => {
       player2.played += 1
 
       games[gameId] = {
-        player1: player1.id,
-        player2: player2.id,
-        whoseTurn: player1.id,
+        player1: client.id,
+        player2: data.id,
+        whoseTurn: client.id,
         sign: {
-          [player1.id]: 'X',
-          [player2.id]: 'O',
+          [client.id]: 'X',
+          [data.id]: 'O',
         },
         playboard: [
           ['', '', ''],
@@ -184,10 +182,10 @@ io.on('connection', client => {
         gameWinner: null, // winner_id if status won
       }
 
-      io.sockets.sockets.get(player1.id).join(gameId)
-      io.sockets.sockets.get(player2.id).join(gameId)
+      io.sockets.sockets.get(client.id).join(gameId)
+      io.sockets.sockets.get(data.id).join(gameId)
 
-      io.emit('excludePlayers', { player1: player1.id, player2: player2.id })
+      io.emit('excludePlayers', { player1: client.id, player2: data.id })
       io.to(gameId).emit('gameStarted', {
         gameId,
         ...games[gameId],
