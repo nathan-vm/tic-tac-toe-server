@@ -8,12 +8,12 @@
 */
 import { winCombinations } from './utils/winCombinations.js'
 
-export function gameRules(data, players, games) {
-  const game = games.find(({ gameId }) => gameId === data.gameId)
-  const player1 = players.find(({ id }) => game.player1.id === id)
-  const player2 = players.find(({ id }) => game.player2.id === id)
+export function gameRules(data, players, games, sockets) {
+  const game = games[data.gameId]
+  const player1 = players[sockets[game.player1].name]
+  const player2 = players[sockets[game.player2].name]
 
-  game.playboard[data.i][data.j] = game.sign[data.player.id]
+  game.playboard[data.i][data.j] = game.sign[data.player]
 
   let isDraw = true
 
@@ -48,6 +48,6 @@ export function gameRules(data, players, games) {
     }
   }
 
-  game.whoseTurn = game.whoseTurn === player1.id ? player2.id : player1.id
+  game.whoseTurn = game.whoseTurn === game.player1 ? game.player2 : game.player1
   return game
 }

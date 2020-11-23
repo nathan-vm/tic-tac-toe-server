@@ -3,6 +3,7 @@ import http from 'http'
 import { v4 as uuid } from 'uuid'
 
 import { Server } from 'socket.io'
+import { gameRules } from './gameRules.js'
 dotenv.config()
 
 const PORT = process.env.PORT
@@ -64,9 +65,7 @@ const games = {
    *        ['','','']
    *        ['','','']
    *        ['','','']
-   *      ],
-   *      gameStatus: 'ongoing', // "ongoing","won","draw"
-   *      gameWinner: null, // player id if status won
+   *      ],game.player2 if status won
    *    }
    * },
    */
@@ -198,7 +197,26 @@ io.on('connection', client => {
   })
 
   client.on('selectCell', data => {
-    // TODO
+    // { player: 'Mz-qnxUfHeLS1ptnAAAt', i: 0, j: 1 }
+    const response = gameRules(data, players, games, sockets)
+
+    if (response.gameStatus === 'ongoing') {
+      io.to(data.gameId).emit('selectCellResponse', {
+        gameId: data.gameId,
+        ...response,
+      })
+    } else {
+      sockets[response.player1].isPlaying = false
+      sockets[response.player2].isPlaying = false
+
+      sockets[response.player1].gameId = null
+      sockets[response.player2].gameId = null
+
+      io.to(data.gameId).emit('selectCellResponse', {
+        gameId: data.gameId,
+        ...response,
+      })
+    }
   })
 
   client.on('disconnect', () => {
