@@ -39,7 +39,7 @@ export function gameRules(data, players, games, sockets) {
       game.gameWinner = game.whoseTurn
       game.gameStatus = 'won'
 
-      game.whoseTurn === player1.id ? player2.won++ : player1.won++
+      game.whoseTurn === game.player1 ? player1.won++ : player2.won++
     }
   }
 

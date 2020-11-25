@@ -65,7 +65,9 @@ const games = {
    *        ['','','']
    *        ['','','']
    *        ['','','']
-   *      ],game.player2 if status won
+   *      ],
+   *      gameWinner: se o jogo acabou => dFlua5hkgjA2K3NSAAAD
+   *      gameStatus: ongoing // draw, won e ongoing
    *    }
    * },
    */
@@ -197,7 +199,7 @@ io.on('connection', client => {
   })
 
   client.on('selectCell', data => {
-    // { player: 'Mz-qnxUfHeLS1ptnAAAt', i: 0, j: 1 }
+    // { player: 'Mz-qnxUfHeLS1ptnAAAt', i: 0, j: 1, gameId: 2189a7bb-709a-46f7-9ff9-3b9c55e6543c  }
     const response = gameRules(data, players, games, sockets)
 
     if (response.gameStatus === 'ongoing') {
@@ -223,7 +225,7 @@ io.on('connection', client => {
     console.log('disconnect : ' + client.id)
 
     if (typeof sockets[client.id] !== 'undefined') {
-      if (sockets[client.id].is_playing) {
+      if (sockets[client.id].isPlaying) {
         io.to(sockets[client.id].gameId).emit('opponentLeft', {})
 
         players[sockets[games[sockets[client.id].game_id].player1].name]
