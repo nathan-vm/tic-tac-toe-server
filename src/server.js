@@ -214,6 +214,11 @@ io.on('connection', client => {
       sockets[response.player1].gameId = null
       sockets[response.player2].gameId = null
 
+      if (response.gameStatus === 'draw') {
+        players[sockets[response.player1].name].draw += 1
+        players[sockets[response.player2].name].draw += 1
+      }
+
       io.to(data.gameId).emit('selectCellResponse', {
         gameId: data.gameId,
         ...response,
