@@ -163,8 +163,8 @@ io.on('connection', client => {
       player1.gameId = gameId
       player2.gameId = gameId
 
-      player1.played += 1
-      player2.played += 1
+      players[player1.name].played += 1
+      players[player2.name].played += 1
 
       games[gameId] = {
         player1: client.id,
